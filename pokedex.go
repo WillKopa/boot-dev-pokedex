@@ -21,13 +21,18 @@ func cleanInput(text string) []string {
 
 func repl() {
 	scanner := bufio.NewScanner(os.Stdin)
+	base_url := "https://pokeapi.co/api/v2/location-area/"
+	c := &config{
+		Next: &base_url,
+		Previous: nil,
+	}
 	for {
 		fmt.Print("Pokedex >")
 		scanner.Scan()
 		user_input := scanner.Text()
 		input_slice := cleanInput(user_input)
 		if len(input_slice) != 0 {
-			handleCommand((input_slice[0]))
+			handleCommand(input_slice[0], c)
 		}
 	}
 }
