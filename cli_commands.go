@@ -4,18 +4,20 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"github.com/WillKopa/boot_dev_pokedex/pokecache"
 	"github.com/WillKopa/boot_dev_pokedex/api"
 )
 
 type cliCommand struct {
-	name        string
-	description string
-	callback    func(*config) error
+	name        		string
+	description 		string
+	callback    		func(*config) error
 }
 
 type config struct {
-	Next     *string
-	Previous *string
+	Next     		*string
+	Previous 		*string
+	Cache			*pokecache.Cache
 }
 
 func handleCommand(commandName string, c *config) {
@@ -76,7 +78,8 @@ func commandMap(c *config) error {
 	if c.Next == nil {
 		return fmt.Errorf("end of map reached. cannot progress further")
 	}
-	locations, err := pokemon_api.GetLocationsFromAPI(c.Next)
+	
+	locations, err := pokemon_api.GetLocationsFromAPI(c.Next, c.Cache)
 	if err != nil {
 		return err
 	}
@@ -95,7 +98,7 @@ func commandMapBack(c *config) error {
 		return fmt.Errorf("beginning of map reached. cannot go back farther")
 	}
 
-	locations, err := pokemon_api.GetLocationsFromAPI(c.Previous)
+	locations, err := pokemon_api.GetLocationsFromAPI(c.Previous, c.Cache)
 	if err != nil {
 		return err
 	}
