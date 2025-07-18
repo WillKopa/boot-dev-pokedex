@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 )
+
 func cleanInput(text string) []string {
 	strings_slice := []string{}
 	text = strings.TrimSpace(text)
@@ -26,10 +27,7 @@ func repl() {
 		user_input := scanner.Text()
 		input_slice := cleanInput(user_input)
 		if len(input_slice) != 0 {
-			fmt.Printf("Your command was: %v\n", input_slice[0])
-			if input_slice[0] == "exit" {
-				os.Exit(0)
-			}
+			handleCommand((input_slice[0]))
 		}
 	}
 }
