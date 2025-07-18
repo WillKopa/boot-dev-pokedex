@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"github.com/WillKopa/boot_dev_pokedex/api"
 )
 
 type cliCommand struct {
@@ -75,7 +76,7 @@ func commandMap(c *config) error {
 	if c.Next == nil {
 		return fmt.Errorf("end of map reached. cannot progress further")
 	}
-	locations, err := getLocationsFromAPI(c.Next)
+	locations, err := pokemon_api.GetLocationsFromAPI(c.Next)
 	if err != nil {
 		return err
 	}
@@ -94,7 +95,7 @@ func commandMapBack(c *config) error {
 		return fmt.Errorf("beginning of map reached. cannot go back farther")
 	}
 
-	locations, err := getLocationsFromAPI(c.Previous)
+	locations, err := pokemon_api.GetLocationsFromAPI(c.Previous)
 	if err != nil {
 		return err
 	}
@@ -109,7 +110,7 @@ func commandMapBack(c *config) error {
 	return nil
 }
 
-func printMap(l locations_api_response) error {
+func printMap(l pokemon_api.Locations_api_response) error {
 	for _, location := range l.Results {
 		fmt.Println(location.Name)
 	}
