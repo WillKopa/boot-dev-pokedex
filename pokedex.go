@@ -26,6 +26,7 @@ func repl() {
 	base_url := "https://pokeapi.co/api/v2/location-area/"
 	cache := pokecache.NewCache(5 * time.Second)
 	c := &config{
+		Base_url: &base_url,
 		Next: &base_url,
 		Previous: nil,
 		Cache: cache,
@@ -36,6 +37,7 @@ func repl() {
 		user_input := scanner.Text()
 		input_slice := cleanInput(user_input)
 		if len(input_slice) != 0 {
+			c.Args = input_slice[1:]
 			handleCommand(input_slice[0], c)
 		}
 	}

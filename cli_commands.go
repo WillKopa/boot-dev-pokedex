@@ -4,8 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"github.com/WillKopa/boot_dev_pokedex/pokecache"
+	"strings"
+
 	"github.com/WillKopa/boot_dev_pokedex/api"
+	"github.com/WillKopa/boot_dev_pokedex/pokecache"
 )
 
 type cliCommand struct {
@@ -15,6 +17,8 @@ type cliCommand struct {
 }
 
 type config struct {
+	Args			[]string
+	Base_url		*string
 	Next     		*string
 	Previous 		*string
 	Cache			*pokecache.Cache
@@ -53,6 +57,11 @@ func getCommands() map[string]cliCommand {
 			name:        "mapb",
 			description: "Displays the previous 20 locations in the Pokemon world. Repeated calls with continue to call the previous results",
 			callback:    commandMapBack,
+		},
+		"explore": {
+			name:		 "explore",
+			description: "Takes a location name and returns a list of pokemon that are in the area",
+			callback: 	  commandExplore,
 		},
 	}
 }
@@ -116,6 +125,31 @@ func commandMapBack(c *config) error {
 func printMap(l pokemon_api.Locations_api_response) error {
 	for _, location := range l.Results {
 		fmt.Println(location.Name)
+	}
+	return nil
+}
+
+func commandExplore(c *config) error {
+	area := strings.Join(c.Args, "")
+	fmt.Println("Exploring " + area + "...")
+	full_url := *c.Base_url + area
+	pokemon, err := pokemon_api.GetPokemonInLocationFromAPI(&full_url, c.Cache)
+	if err != nil {
+		return fmt.Errorf("error calling api: %v", err)
+	}
+
+	err = printPokemonInArea(pokemon)
+	if err != nil {
+		return fmt.Errorf("error printing list of pokemon: %v", err)
+	}
+	return nil
+}
+
+func printPokemonInArea(p pokemon_api.Pokemon_in_location_response) error {
+	encounters := p.PokemonEncounters
+	fmt.Println("Found Pokemon:")
+	for _, encounter := range encounters {
+		fmt.Println(" - " + encounter.Pokemon.Name)
 	}
 	return nil
 }
