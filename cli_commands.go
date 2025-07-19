@@ -3,25 +3,28 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 
-	"github.com/WillKopa/boot_dev_pokedex/api"
+	pokemon_api "github.com/WillKopa/boot_dev_pokedex/api"
 	"github.com/WillKopa/boot_dev_pokedex/pokecache"
 )
 
 type cliCommand struct {
-	name        		string
-	description 		string
-	callback    		func(*config) error
+	name        string
+	description string
+	callback    func(*config) error
 }
 
 type config struct {
-	Args			[]string
-	Base_url		*string
-	Next     		*string
-	Previous 		*string
-	Cache			*pokecache.Cache
+	Pokedex           map[string]pokemon_api.Pokemon
+	Args              []string
+	Base_pokemon_url  *string
+	Base_location_url *string
+	Next              *string
+	Previous          *string
+	Cache             *pokecache.Cache
 }
 
 func handleCommand(commandName string, c *config) {
@@ -59,9 +62,19 @@ func getCommands() map[string]cliCommand {
 			callback:    commandMapBack,
 		},
 		"explore": {
-			name:		 "explore",
+			name:        "explore",
 			description: "Takes a location name and returns a list of pokemon that are in the area",
-			callback: 	  commandExplore,
+			callback:    commandExplore,
+		},
+		"catch": {
+			name:        "catch",
+			description: "Try to catch a pokemon with catch <pokemon>",
+			callback:    commandCatch,
+		},
+		"inspect": {
+			name:        "inspect",
+			description: "Inspect a pokemon you have caught using inspect <pokemon>",
+			callback:    commandInspect,
 		},
 	}
 }
@@ -87,7 +100,7 @@ func commandMap(c *config) error {
 	if c.Next == nil {
 		return fmt.Errorf("end of map reached. cannot progress further")
 	}
-	
+
 	locations, err := pokemon_api.GetLocationsFromAPI(c.Next, c.Cache)
 	if err != nil {
 		return err
@@ -132,7 +145,7 @@ func printMap(l pokemon_api.Locations_api_response) error {
 func commandExplore(c *config) error {
 	area := strings.Join(c.Args, "")
 	fmt.Println("Exploring " + area + "...")
-	full_url := *c.Base_url + area
+	full_url := *c.Base_location_url + area
 	pokemon, err := pokemon_api.GetPokemonInLocationFromAPI(&full_url, c.Cache)
 	if err != nil {
 		return fmt.Errorf("error calling api: %v", err)
@@ -151,5 +164,45 @@ func printPokemonInArea(p pokemon_api.Pokemon_in_location_response) error {
 	for _, encounter := range encounters {
 		fmt.Println(" - " + encounter.Pokemon.Name)
 	}
+	return nil
+}
+
+func commandCatch(c *config) error {
+	pokemon_name := strings.Join(c.Args, "")
+	full_url := *c.Base_pokemon_url + pokemon_name
+	fmt.Println("Throwing a Pokeball at " + pokemon_name + "...")
+	pokemon, err := pokemon_api.GetPokemonFromAPI(&full_url, c.Cache)
+	if err != nil {
+		return fmt.Errorf("error getting pokemon from api: %v", err)
+	}
+	if rand.Intn(pokemon.Base_experience) < 50 {
+		c.Pokedex[pokemon.Name] = pokemon
+		fmt.Println(pokemon.Name + " was caught!")
+	} else {
+		fmt.Println(pokemon_name + " escaped!")
+	}
+	return nil
+}
+
+func commandInspect(c *config) error {
+	pokemon_name := strings.Join(c.Args, "")
+	poke_stats, exists := c.Pokedex[pokemon_name]
+	if !exists {
+		fmt.Println("you have not caught that pokemon")
+		return nil
+	}
+
+	fmt.Printf("Name: %s\n", poke_stats.Name)
+	fmt.Printf("Height: %v\n", poke_stats.Height)
+	fmt.Printf("Weight: %v\n", poke_stats.Weight)
+	fmt.Println("Stats: ")
+	for _, stat := range(poke_stats.Stats) {
+		fmt.Printf("  -%s: %v\n", stat.Stat.Name, stat.BaseStat)
+	}
+	fmt.Println("Types:")
+	for _, poke_type := range(poke_stats.Types) {
+		fmt.Println("  - " + poke_type.Type.Name)
+	}
+
 	return nil
 }

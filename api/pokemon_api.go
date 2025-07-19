@@ -73,6 +73,29 @@ type Pokemon_in_location_response struct {
 	} `json:"pokemon_encounters"`
 }
 
+type Pokemon struct {
+	Name 			string 	`json:"name"`
+	Base_experience int		`json:"base_experience"`
+	Height			int		`json:"height"`
+	Weight			int		`json:"weight"`
+	Stats []struct {
+		BaseStat int `json:"base_stat"`
+		Effort   int `json:"effort"`
+		Stat     struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"stat"`
+	} `json:"stats"`
+	Types []struct {
+		Slot int `json:"slot"`
+		Type struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"type"`
+	} `json:"types"`
+}
+
+
 func GetLocationsFromAPI(url *string, cache *pokecache.Cache) (Locations_api_response, error) {
 	body, exists := cache.Get(*url)
 	if !exists {
@@ -121,6 +144,32 @@ func GetPokemonInLocationFromAPI(url *string, cache *pokecache.Cache) (Pokemon_i
 	err := json.Unmarshal(body, &pokemon)
 	if err != nil {
 		return Pokemon_in_location_response{}, fmt.Errorf("error Unmarshaling body to Pokemon_in_location_response struct: %v", err)
+	}
+	return pokemon, nil
+}
+
+func GetPokemonFromAPI(url *string, cache *pokecache.Cache) (Pokemon, error) {
+	body, exists := cache.Get(*url)
+	if !exists {
+		res, err := http.Get(*url)
+		if err != nil {
+			return Pokemon{}, fmt.Errorf("error calling Pokemon endpoint: %v", err)
+		}
+		body, err = io.ReadAll(res.Body)
+		defer res.Body.Close()
+		if res.StatusCode > 299 {
+			return Pokemon{}, fmt.Errorf("response code %v when calling Pokemon endpoint", res.StatusCode)
+		}
+
+		if err != nil {
+			return Pokemon{}, fmt.Errorf("error when reading response body: %v", err)
+		}
+	}
+	cache.Add(*url, body)
+	pokemon := Pokemon{}
+	err := json.Unmarshal(body, &pokemon)
+	if err != nil {
+		return Pokemon{}, fmt.Errorf("error Unmarshaling body to Pokemon struct: %v", err)
 	}
 	return pokemon, nil
 }
